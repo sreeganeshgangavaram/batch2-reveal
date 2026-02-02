@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMS-RKV Batch 2 Reveal</title>
+
+  <style>
+    :root{
+      --bg0:#030612;
+      --bg1:#04091a;
+      --bg2:#02040d;
+
+      --panel: rgba(8, 14, 36, .78);
+      --panel2: rgba(3,6,14,.92);
+
+      --text:#dbe8ff;
+      --muted:#8db0e6;
+
+      --cyan:#00f5ff;
+      --green:#00ff88;
+      --danger:#ff3b64;
+      --stroke: rgba(0,245,255,.16);
+
+      --shadow: 0 40px 160px rgba(0,0,0,.72);
+      --radius:28px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color: var(--text);
+      overflow-x:hidden;
+
+      background:
+        radial-gradient(950px 560px at 18% 16%, rgba(0,245,255,.12), transparent 62%),
+        radial-gradient(980px 650px at 82% 28%, rgba(0,255,136,.09), transparent 66%),
+        radial-gradient(720px 520px at 55% 92%, rgba(130,80,255,.13), transparent 62%),
+        linear-gradient(135deg, var(--bg0) 0%, var(--bg1) 45%, var(--bg2) 100%);
+    }
+
+    /* grid overlay */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      background-image:
+        linear-gradient(to right, rgba(0,245,255,.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,245,255,.06) 1px, transparent 1px);
+      background-size: 64px 64px;
+      opacity:.20;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    /* scanlines */
+    body::after{
+      content:"";
+      position:fixed; inset:0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.028) 0px,
+        rgba(255,255,255,.028) 1px,
+        transparent 3px,
+        transparent 7px
+      );
+      opacity:.12;
+      pointer-events:none;
+      z-index:0;
+      mix-blend-mode: overlay;
+    }
+
+    /* watermark */
+    .watermark{
+      position:fixed; inset:0;
+      display:grid;
+      place-items:center;
+      pointer-events:none;
+      z-index:0;
+      opacity:.085;
+      user-select:none;
+    }
+    .wm{
+      border-radius:999px;
+      padding: 24px 42px;
+      border:1px solid rgba(0,245,255,.22);
+      background: rgba(0,0,0,.18);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 0 2px rgba(0,245,255,.05) inset, 0 0 130px rgba(0,245,255,.12);
+      position:relative;
+      overflow:hidden;
+      text-align:center;
+      transform: translateY(6px);
+    }
+    .wm::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, transparent, rgba(0,245,255,.24), transparent);
+      transform: translateX(-120%);
+      animation: scan 2.4s ease-in-out infinite;
+      opacity:.45;
+    }
+    @keyframes scan{
+      0%{transform: translateX(-120%);}
+      100%{transform: translateX(120%);}
+    }
+    .wm-title{
+      font-weight:1000;
+      letter-spacing:.25em;
+      font-size: clamp(18px, 3vw, 36px);
+      color: var(--cyan);
+      text-shadow: 0 0 24px rgba(0,245,255,.55);
+    }
+    .wm-sub{
+      margin-top: 10px;
+      font-weight:900;
+      letter-spacing:.18em;
+      font-size: clamp(10px, 1.3vw, 14px);
+      color: rgba(141,176,230,.9);
+    }
+
+    /* glitch overlay */
+    .glitch{
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:100;
+      display:none;
+      background:
+        linear-gradient(90deg, transparent 0%, rgba(0,245,255,.10) 40%, transparent 100%),
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,.05) 0px,
+          rgba(255,255,255,.05) 2px,
+          transparent 4px,
+          transparent 7px
+        );
+      mix-blend-mode: screen;
+      animation: glitchFlash .35s ease both;
+    }
+    @keyframes glitchFlash{
+      0%{opacity:0; transform: translateX(0);}
+      35%{opacity:.95; transform: translateX(-6px);}
+      70%{opacity:.65; transform: translateX(8px);}
+      100%{opacity:0; transform: translateX(0);}
+    }
+
+    .app{
+      position:relative;
+      z-index:1;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      position:sticky; top:0; z-index:4;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(2,7,18,.92), rgba(2,7,18,.58));
+      border-bottom: 1px solid rgba(0,245,255,.12);
+      backdrop-filter: blur(12px);
+    }
+    .brand{display:flex; align-items:center; gap:10px; min-width:0;}
+    .logo{
+      width:40px; height:40px;
+      border-radius: 13px;
+      border: 1px solid rgba(0,245,255,.22);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(0,245,255,.22), transparent 55%),
+        radial-gradient(circle at 80% 70%, rgba(0,255,136,.16), transparent 55%),
+        rgba(8,14,34,.65);
+      display:grid; place-items:center;
+      box-shadow: 0 0 0 2px rgba(0,245,255,.06) inset;
+    }
+    .logo span{
+      font-weight:1000;
+      color: var(--green);
+      text-shadow: 0 0 18px rgba(0,255,136,.85);
+      font-size: 13px;
+    }
+    .titlewrap{display:flex; flex-direction:column; gap:2px; min-width:0;}
+    .title{font-weight:1000; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .subtitle{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
+    .rightinfo{
+      display:flex; align-items:center; gap:10px; white-space:nowrap;
+      font-size:12px; color: var(--muted);
+    }
+    .pill{
+      padding: 7px 12px;
+      border-radius:999px;
+      border:1px solid rgba(0,245,255,.20);
+      background: rgba(8,14,34,.52);
+      box-shadow: 0 0 0 2px rgba(0,245,255,.05) inset;
+    }
+
+    .main{
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 18px 0 28px;
+    }
+    .container{
+      width:min(1020px, 94vw);
+      display:grid;
+      gap:16px;
+    }
+
+    .card{
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(8,14,34,.86), rgba(4,8,18,.72));
+      border: 1px solid rgba(0,245,255,.14);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .card::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(650px 270px at 10% 0%, rgba(0,245,255,.20), transparent 72%),
+        radial-gradient(650px 270px at 90% 30%, rgba(0,255,136,.12), transparent 72%);
+      pointer-events:none;
+    }
+    .card-inner{
+      position:relative;
+      padding: 26px 20px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .big{
+      font-weight:1000;
+      font-size: clamp(24px, 4.2vw, 40px);
+      line-height:1.12;
+    }
+    .desc{color:var(--muted); font-size:14px; line-height:1.6;}
+    .cta{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+
+    button{
+      cursor:pointer;
+      border:none;
+      outline:none;
+      font-weight:1000;
+      border-radius:18px;
+      padding: 12px 16px;
+      transition: transform .09s ease, box-shadow .25s ease, filter .25s ease;
+      user-select:none;
+      position:relative;
+      overflow:hidden;
+    }
+    button:active{transform: scale(.985);}
+
+    .btn-primary{
+      color:#021018;
+      background: linear-gradient(180deg, var(--cyan), #00cbe0);
+      box-shadow: 0 16px 60px rgba(0,245,255,.22);
+    }
+    .btn-audio{
+      background: rgba(0,255,136,.12);
+      border:1px solid rgba(0,255,136,.22);
+      color: var(--green);
+      box-shadow: 0 16px 60px rgba(0,255,136,.07);
+    }
+    .btn-secondary{
+      color:var(--text);
+      background: rgba(0,0,0,0);
+      border: 1px solid rgba(0,245,255,.25);
+    }
+    .btn-danger{
+      background: linear-gradient(180deg, #ff5a78, #ff355a);
+      color:#18060f;
+      box-shadow: 0 16px 60px rgba(255,59,100,.18);
+    }
+    .btn-muted{
+      background: rgba(8,14,34,.70);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--text);
+    }
+
+    .panel-header{
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid rgba(0,245,255,.08);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      position:relative;
+    }
+    .panel-title{font-weight:1000; font-size:16px;}
+    .panel-sub{font-size:12px; color:var(--muted); margin-top:5px;}
+
+    .progress{
+      height: 10px;
+      border-radius:999px;
+      background: rgba(0,245,255,.08);
+      border:1px solid rgba(0,245,255,.12);
+      overflow:hidden;
+    }
+    .progress>div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+      box-shadow: 0 0 26px rgba(0,245,255,.38);
+      transition: width .25s ease;
+    }
+
+    .panel-body{
+      padding: 18px;
+      display:grid;
+      gap:14px;
+      justify-items:center;
+    }
+
+    .challenge{
+      width: min(820px, 100%);
+      padding: 18px;
+      border-radius: 26px;
+      border:1px solid rgba(0,245,255,.14);
+      background: linear-gradient(180deg, rgba(0,0,0,.14), rgba(0,0,0,.08));
+      position:relative;
+      overflow:hidden;
+      transform-origin:center;
+      animation: popIn .35s ease both;
+    }
+    @keyframes popIn{
+      from{opacity:0; transform: translateY(12px) scale(.98);}
+      to{opacity:1; transform: translateY(0) scale(1);}
+    }
+
+    .hint{font-size:12px; color: rgba(141,176,230,.95);}
+
+    .type{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      white-space:pre-wrap;
+      line-height:1.55;
+    }
+
+    .codebox{
+      margin-top:12px;
+      width:100%;
+      border-radius:22px;
+      border:1px solid rgba(0,245,255,.14);
+      background: rgba(2,5,14,.62);
+      padding: 14px 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      color: rgba(219,232,255,.92);
+      position:relative;
+      overflow:hidden;
+      box-shadow: 0 0 0 2px rgba(0,245,255,.04) inset;
+    }
+    .langtag{
+      position:absolute;
+      top: 10px; right: 10px;
+      font-weight:1000;
+      font-size:11px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(0,255,136,.22);
+      background: rgba(0,255,136,.10);
+      color: var(--green);
+      letter-spacing:.12em;
+    }
+
+    .choicegrid{
+      width:min(820px, 100%);
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .choice{
+      padding:14px;
+      border-radius: 22px;
+      border: 1px solid rgba(0,245,255,.14);
+      background: rgba(0,0,0,.14);
+      color: var(--text);
+      font-weight:1000;
+      text-align:left;
+      box-shadow: 0 0 0 2px rgba(0,245,255,.03) inset;
+      transform: translateZ(0);
+    }
+
+    /* Neon wave flood */
+    .choice::before{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(circle at var(--x, 50%) var(--y, 50%),
+        rgba(0,255,136,.42) 0%,
+        rgba(0,255,136,.18) 35%,
+        transparent 65%);
+      opacity:0;
+      transform: scale(.75);
+      transition: opacity .18s ease, transform .25s ease;
+      pointer-events:none;
+    }
+    .choice.selected::before{
+      opacity:1;
+      transform: scale(1.25);
+    }
+
+    .choice.correct{
+      border-color: rgba(0,255,136,.35);
+      box-shadow:
+        0 0 0 2px rgba(0,255,136,.10) inset,
+        0 0 40px rgba(0,255,136,.12);
+    }
+    .choice.wrong{
+      border-color: rgba(255,59,100,.42);
+      box-shadow: 0 0 0 2px rgba(255,59,100,.10) inset;
+      animation: shake .30s ease;
+    }
+    @keyframes shake{
+      0%{transform: translateX(0)}
+      25%{transform: translateX(-6px)}
+      50%{transform: translateX(6px)}
+      75%{transform: translateX(-4px)}
+      100%{transform: translateX(0)}
+    }
+
+    .msg{
+      width:min(820px, 100%);
+      padding: 12px 14px;
+      border-radius: 20px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+      display:none;
+      animation: popIn .25s ease both;
+    }
+    .msg.good{border-color: rgba(0,255,136,.30); background: rgba(0,255,136,.08);}
+    .msg.bad{border-color: rgba(255,59,100,.40); background: rgba(255,59,100,.08);}
+
+    .row{
+      width:min(820px, 100%);
+      display:flex;
+      justify-content:center;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    /* boot overlay */
+    .boot{
+      position:fixed; inset:0;
+      z-index:120;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background: rgba(1,3,8,.86);
+      backdrop-filter: blur(12px);
+      padding:18px;
+    }
+    .bootbox{
+      width:min(880px, 96vw);
+      border-radius: 34px;
+      border:1px solid rgba(0,245,255,.20);
+      background: linear-gradient(180deg, rgba(8,14,34,.95), rgba(3,6,14,.92));
+      box-shadow: 0 60px 220px rgba(0,0,0,.70);
+      overflow:hidden;
+      position:relative;
+      padding: 24px;
+    }
+    .bootbox::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(780px 280px at 15% 0%, rgba(0,245,255,.18), transparent 70%),
+        radial-gradient(780px 280px at 85% 25%, rgba(0,255,136,.12), transparent 70%);
+      pointer-events:none;
+    }
+    .boot-title{
+      position:relative;
+      font-weight:1000;
+      letter-spacing:.12em;
+      color: var(--cyan);
+      text-shadow: 0 0 22px rgba(0,245,255,.55);
+    }
+    .boot-log{
+      position:relative;
+      margin-top:14px;
+      border-radius: 22px;
+      border:1px solid rgba(0,245,255,.14);
+      background: rgba(2,5,14,.72);
+      padding: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      color: rgba(219,232,255,.92);
+      min-height: 180px;
+      line-height: 1.65;
+    }
+
+    /* reveal overlay */
+    .overlay{
+      position:fixed; inset:0;
+      background: rgba(1,3,8,.82);
+      backdrop-filter: blur(12px);
+      z-index:50;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+    .modal{
+      width:min(820px, 96vw);
+      border-radius: 34px;
+      border:1px solid rgba(0,245,255,.22);
+      background: linear-gradient(180deg, rgba(8,14,34,.95), rgba(3,6,14,.92));
+      box-shadow: 0 60px 220px rgba(0,0,0,.7);
+      position:relative;
+      overflow:hidden;
+      animation: revealIn .35s ease both;
+    }
+    @keyframes revealIn{
+      from{opacity:0; transform: translateY(16px) scale(.98);}
+      to{opacity:1; transform: translateY(0) scale(1);}
+    }
+    .modal::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(780px 280px at 15% 0%, rgba(0,245,255,.18), transparent 70%),
+        radial-gradient(780px 280px at 85% 25%, rgba(0,255,136,.12), transparent 70%);
+      pointer-events:none;
+    }
+    .modal-inner{
+      position:relative;
+      padding: 24px;
+      display:grid;
+      gap:16px;
+    }
+    .grant{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .tag{
+      font-weight:1000;
+      letter-spacing:.12em;
+      color: var(--green);
+      text-shadow: 0 0 24px rgba(0,255,136,.6);
+      font-size:14px;
+    }
+    .small{font-size:12px; color: var(--muted); margin-top:6px;}
+
+    .membercard{
+      border-radius: 30px;
+      border:1px solid rgba(0,245,255,.18);
+      background: rgba(0,0,0,.16);
+      padding: 26px;
+      position:relative;
+      overflow:hidden;
+    }
+    .membercard::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, transparent, rgba(0,245,255,.12), transparent);
+      transform: translateX(-110%);
+      animation: scan 1.1s ease-in-out infinite;
+      opacity:.65;
+      pointer-events:none;
+    }
+    .badge{
+      display:inline-flex;
+      padding: 8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:1000;
+      letter-spacing:.10em;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.05);
+    }
+    .dev{border-color: rgba(0,245,255,.25); color: var(--cyan);}
+    .mgmt{border-color: rgba(0,255,136,.25); color: var(--green);}
+    .member-name{
+      margin-top: 14px;
+      font-weight:1000;
+      font-size: clamp(26px, 3vw, 38px);
+    }
+    .meta{
+      margin-top: 12px;
+      display:grid;
+      gap:8px;
+      color: var(--muted);
+      font-size:14px;
+    }
+    .meta b{color:var(--text); font-weight:1000;}
+
+    /* confetti */
+    .confetti{
+      position:fixed; inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      z-index:60;
+      display:none;
+    }
+    .confetti span{
+      position:absolute;
+      border-radius:8px;
+      opacity:.9;
+      animation: fall 1.5s linear forwards;
+      filter: drop-shadow(0 0 22px rgba(0,245,255,.35));
+    }
+    .logo img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 6px;
+      filter: drop-shadow(0 0 14px rgba(0,245,255,.35));
+    }
+
+    @keyframes fall{
+      0%{transform: translateY(-30px) rotate(0deg); opacity:0;}
+      12%{opacity:1;}
+      100%{transform: translateY(100vh) rotate(340deg); opacity:0;}
+    }
+
+    .footer{text-align:center; color: rgba(141,176,230,.70); font-size:12px; padding-bottom:12px;}
+
+    @media (max-width:520px){
+      .rightinfo{display:none;}
+      .choicegrid{grid-template-columns: 1fr;}
+      .choice{text-align:center;}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="watermark">
+    <div class="wm">
+      <div class="wm-title">SMS • RKV</div>
+      <div class="wm-sub">CYBER REVEAL SYSTEM • BATCH 2</div>
+    </div>
+  </div>
+
+  <div class="glitch" id="glitch"></div>
+  <div class="confetti" id="confetti"></div>
+
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">
+  <img src="rgukt.png" alt="RGUKT Logo" />
+</div>
+
+        <div class="titlewrap">
+          <div class="title">STUDENT MANAGEMENT SYSTEM-RKV Batch 2 Reveal</div>
+          <div class="subtitle">11 Coding Missions • Java + C </div>
+        </div>
+      </div>
+      <div class="rightinfo">
+        <div class="pill" id="levelPill">LEVEL —</div>
+        <div class="pill" id="unlockedPill">UNLOCKED 0/11</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="container">
+        <!-- Start -->
+        <div class="card" id="startScreen">
+          <div class="card-inner">
+            <div class="big">      Batch 2 Members Reveal Protocol</div>
+            <div class="desc">
+              Clear <b>11 coding missions</b> to unlock all members.
+            </div>
+            <div class="cta">
+              <button class="btn-primary" id="startBtn">Start Revelation Game</button>
+              <button class="btn-audio" id="audioBtn">BGM: OFF</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game -->
+        <div class="card" id="gamePanel" style="display:none;">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title" id="panelTitle">Level</div>
+              <div class="panel-sub type" id="panelSub"></div>
+            </div>
+            <div style="min-width:240px">
+              <div class="panel-sub" style="margin-bottom:6px;">Progress</div>
+              <div class="progress"><div id="progressFill"></div></div>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <div class="challenge" id="challengeArea"></div>
+            <div class="msg" id="msgBox"></div>
+
+            <div class="row">
+              <button class="btn-primary" id="submitBtn">Submit</button>
+              <button class="btn-muted" id="retryBtn" style="display:none;">Try Again</button>
+              <button class="btn-danger" id="revealAnywayBtn" style="display:none;">Reveal Anyway</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">SMS-RKV Team • Batch-2 Reveal Game</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Boot Overlay -->
+  <div class="boot" id="boot">
+    <div class="bootbox">
+      <div class="boot-title">BOOTING SMS-RKV REVEAL ENGINE...</div>
+      <div class="boot-log" id="bootLog"></div>
+    </div>
+  </div>
+
+  <!-- Reveal Overlay -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-inner">
+        <div class="grant">
+          <div>
+            <div class="tag">ACCESS GRANTED ✅</div>
+            <div class="small" id="unlockSmall">Member Unlocked</div>
+          </div>
+          <button class="btn-secondary" id="closeOverlayBtn">Continue</button>
+        </div>
+
+        <div class="membercard">
+          <div class="badge" id="catBadge">CATEGORY</div>
+          <div class="member-name" id="memName">Name</div>
+          <div class="meta">
+            <div><b>ID:</b> <span id="memId">RXXXXXX</span></div>
+            <div><b>Team:</b> <span id="memTeam">Development</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIO -->
+  <audio id="bgm" loop preload="auto"><source src="bgm.mp3" type="audio/mpeg"></audio>
+  <audio id="sClick" preload="auto"><source src="click.mp3" type="audio/mpeg"></audio>
+  <audio id="sSuccess" preload="auto"><source src="success.mp3" type="audio/mpeg"></audio>
+  <audio id="sFail" preload="auto"><source src="fail.mp3" type="audio/mpeg"></audio>
+  <audio id="sUnlock" preload="auto"><source src="unlock.mp3" type="audio/mpeg"></audio>
+  <audio id="sGlitch" preload="auto"><source src="glitch.mp3" type="audio/mpeg"></audio>
+
+  <script>
+    // MEMBERS (11)
+    const MEMBERS = [
+      { name:"B. Navya", id:"R230022", team:"Development" },
+      { name:"D. Gayathri", id:"R230802", team:"Development" },
+      { name:"K. Jahnavi", id:"R230343", team:"Development" },
+      { name:"G. Sree Ganesh", id:"R230256", team:"Development" },
+      { name:"Ch. Siva rama swamy", id:"R230152", team:"Development" },
+      { name:"A. Manoj kumar", id:"R230843", team:"Development" },
+      { name:"G. Siva kumar", id:"R230199", team:"Management" },
+      { name:"Y. Chenna Kesava Reddy", id:"R230043", team:"Management" },
+      { name:"M. Venkatadri", id:"R230219", team:"Management" },
+      { name:"R. Harika", id:"R230443", team:"Management" },
+      { name:"M. Anjali", id:"R230656", team:"Management" },
+    ];
+
+    // reveal 1 per level
+    const REVEAL_COUNTS = Array(11).fill(1);
+
+    // question builders
+    const LEVELS = [
+      qOutput("Level 1 — Java Output", "JAVA", `int a=2, b=3;\nSystem.out.println(a+b);`, ["5","6","23","Error"], 0),
+      qFixBug("Level 2 — C Bug Fix", "C", `#include <stdio.h>\nint main(){\n  printf("Hello");\n  return 0\n}`, ["Missing semicolon after return 0;", "Missing printf", "Wrong include", "No error"], 0),
+      qMCQ("Level 3 — Java AND Operator", "JAVA", "Which operator is used for AND in Java?", ["&&","||","!","&"], 0),
+      qOutput("Level 4 — C Output", "C", `int x = 5;\nprintf("%d", x++);`, ["5","6","Error","55"], 0),
+      qMCQ("Level 5 — Java Data Type", "JAVA", "Which data type is used to store a name?", ["String","int","float","char"], 0),
+      qOutput("Level 6 — Java Division", "JAVA", `int x=10;\nSystem.out.println(x/3);`, ["3","3.33","0","Error"], 0),
+      qMCQ("Level 7 — C Printf", "C", "Which is correct to print an integer in C?", ['printf("%d", x);','print(x);','System.out.println(x);','printf("%s", x);'], 0),
+      qOutput("Level 8 — C Output", "C", `int a=2;\nprintf("%d", a*3);`, ["6","5","Error","23"], 0),
+      qMCQ("Level 9 — Java Assignment", "JAVA", "Which symbol is used for assignment in Java?", ["=","==","!=","<="], 0),
+      qFixBug("Level 10 — Java Bug Fix", "JAVA", `System.ot.println("Hi");`, ["Change ot → out", "Change println → printIn", "Add semicolon only", "No error"], 0),
+      qMCQ("Level 11 — Final Boss", "JAVA", "Which is a valid class name in Java?", ["StudentManagement", "2Student", "student-management", "student management"], 0),
+    ];
+
+    function qOutput(title, lang, code, options, correctIndex){
+      return { title, lang, sub:"Predict the output of the code.", options, correctIndex,
+        render:(root)=>renderQuestion(root, lang, "Predict the output:", code, options)
+      };
+    }
+    function qFixBug(title, lang, code, options, correctIndex){
+      return { title, lang, sub:"Find the issue in the code.", options, correctIndex,
+        render:(root)=>renderQuestion(root, lang, "Choose the correct fix:", code, options)
+      };
+    }
+    function qMCQ(title, lang, question, options, correctIndex){
+      return { title, lang, sub:"Choose the correct option.", options, correctIndex,
+        render:(root)=>renderMCQ(root, question, options)
+      };
+    }
+
+    // ====== UI elements ======
+    const startScreen = document.getElementById("startScreen");
+    const gamePanel = document.getElementById("gamePanel");
+    const startBtn = document.getElementById("startBtn");
+    const panelTitle = document.getElementById("panelTitle");
+    const panelSub = document.getElementById("panelSub");
+    const challengeArea = document.getElementById("challengeArea");
+    const msgBox = document.getElementById("msgBox");
+
+    const submitBtn = document.getElementById("submitBtn");
+    const retryBtn = document.getElementById("retryBtn");
+    const revealAnywayBtn = document.getElementById("revealAnywayBtn");
+
+    const progressFill = document.getElementById("progressFill");
+    const levelPill = document.getElementById("levelPill");
+    const unlockedPill = document.getElementById("unlockedPill");
+
+    const overlay = document.getElementById("overlay");
+    const closeOverlayBtn = document.getElementById("closeOverlayBtn");
+    const memName = document.getElementById("memName");
+    const memId = document.getElementById("memId");
+    const memTeam = document.getElementById("memTeam");
+    const catBadge = document.getElementById("catBadge");
+    const unlockSmall = document.getElementById("unlockSmall");
+
+    const confetti = document.getElementById("confetti");
+    const glitch = document.getElementById("glitch");
+
+    const boot = document.getElementById("boot");
+    const bootLog = document.getElementById("bootLog");
+
+    // audio
+    const bgm = document.getElementById("bgm");
+    const audioBtn = document.getElementById("audioBtn");
+    const sClick = document.getElementById("sClick");
+    const sSuccess = document.getElementById("sSuccess");
+    const sFail = document.getElementById("sFail");
+    const sUnlock = document.getElementById("sUnlock");
+    const sGlitch = document.getElementById("sGlitch");
+
+    let audioEnabled = true;
+
+    function safePlay(aud){
+      if(!aud) return;
+      aud.currentTime = 0;
+      aud.play().catch(()=>{});
+    }
+
+    function setAudioState(on){
+      audioEnabled = on;
+      audioBtn.textContent = on ? "BGM: ON" : "BGM: OFF";
+      if(on){
+        bgm.volume = 0.65;
+        bgm.play().catch(()=>{});
+      }else{
+        bgm.pause();
+      }
+    }
+    audioBtn.addEventListener("click", ()=>{
+      safePlay(sClick);
+      setAudioState(!audioEnabled);
+    });
+
+    // ====== helpers ======
+    function escapeHtml(str){
+      return str.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+    }
+
+    function setMsg(text, good=false, bad=false){
+      msgBox.style.display = "block";
+      msgBox.textContent = text;
+      msgBox.classList.remove("good","bad");
+      if(good) msgBox.classList.add("good");
+      if(bad) msgBox.classList.add("bad");
+    }
+    function clearMsg(){
+      msgBox.style.display = "none";
+      msgBox.textContent = "";
+      msgBox.classList.remove("good","bad");
+    }
+
+    function shootConfetti(){
+      confetti.style.display="block";
+      confetti.innerHTML="";
+      const n=48;
+      for(let i=0;i<n;i++){
+        const s=document.createElement("span");
+        s.style.left=(Math.random()*100)+"vw";
+        s.style.top=(-10 - Math.random()*50)+"px";
+        s.style.width=(7 + Math.random()*9)+"px";
+        s.style.height=(12 + Math.random()*24)+"px";
+        s.style.opacity=(0.65 + Math.random()*0.35).toFixed(2);
+        s.style.animationDuration=(1.1 + Math.random()*1.0).toFixed(2)+"s";
+        s.style.background = Math.random()>0.5 ? "rgba(0,245,255,.85)" : "rgba(0,255,136,.75)";
+        confetti.appendChild(s);
+      }
+      setTimeout(()=>{confetti.style.display="none"; confetti.innerHTML="";}, 1700);
+    }
+
+    function randomUnrevealedMember(){
+      const remaining = MEMBERS.filter(m => !unlocked.includes(m.id));
+      if(remaining.length===0) return null;
+      return remaining[Math.floor(Math.random()*remaining.length)];
+    }
+
+    function showGlitch(){
+      glitch.style.display = "block";
+      safePlay(sGlitch);
+      setTimeout(()=> glitch.style.display="none", 380);
+    }
+
+    async function typeText(el, text, speed=14){
+      el.textContent = "";
+      for(let i=0;i<text.length;i++){
+        el.textContent += text[i];
+        await new Promise(r=>setTimeout(r, speed));
+      }
+    }
+
+    // boot animation
+    async function runBoot(){
+      boot.style.display = "flex";
+      const lines = [
+        "Initializing SMS-RKV Kernel...",
+        "Loading Batch-2 Modules...",
+        "Connecting to Reveal Server...",
+        "Verifying Internal Session...",
+        "Loading UI HUD Components...",
+        "Mounting Member Database...",
+        "Starting Reveal Engine... ✅"
+      ];
+
+      bootLog.textContent = "";
+      for(const l of lines){
+        bootLog.textContent += "> " + l + "\n";
+        safePlay(sClick);
+        await new Promise(r=>setTimeout(r, 240));
+      }
+
+      await new Promise(r=>setTimeout(r, 450));
+      boot.style.display = "none";
+    }
+
+    // Render questions
+    function renderQuestion(root, lang, prompt, code, options){
+      root.innerHTML = `
+        <div class="hint type">${prompt}</div>
+        <div class="codebox">
+          <div class="langtag">${lang}</div>
+          <pre style="margin:0; white-space:pre-wrap;">${escapeHtml(code.trim())}</pre>
+        </div>
+        <div class="choicegrid" id="choices"></div>
+      `;
+      const wrap = root.querySelector("#choices");
+      options.forEach((opt, idx)=>{
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.innerHTML = opt;
+        btn.dataset.index = idx;
+        wrap.appendChild(btn);
+      });
+    }
+
+    function renderMCQ(root, question, options){
+      root.innerHTML = `
+        <div class="hint type">${escapeHtml(question)}</div>
+        <div class="choicegrid" id="choices"></div>
+      `;
+      const wrap = root.querySelector("#choices");
+      options.forEach((opt, idx)=>{
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.innerHTML = opt;
+        btn.dataset.index = idx;
+        wrap.appendChild(btn);
+      });
+    }
+
+    // selection wave
+    function bindChoiceWave(){
+      selectedIndex = null;
+
+      challengeArea.querySelectorAll(".choice").forEach(btn=>{
+        btn.addEventListener("pointermove", (e)=>{
+          const r = btn.getBoundingClientRect();
+          const x = ((e.clientX - r.left) / r.width) * 100;
+          const y = ((e.clientY - r.top) / r.height) * 100;
+          btn.style.setProperty("--x", x + "%");
+          btn.style.setProperty("--y", y + "%");
+        });
+
+        btn.addEventListener("click", ()=>{
+          safePlay(sClick);
+          challengeArea.querySelectorAll(".choice").forEach(b=>{
+            b.classList.remove("selected","correct","wrong");
+          });
+          btn.classList.add("selected");
+          selectedIndex = Number(btn.dataset.index);
+        });
+      });
+    }
+
+    // ====== state ======
+    let currentLevel = -1;
+    let unlocked = [];
+    let selectedIndex = null;
+    let wrongAttemptedThisLevel = false;
+
+    function updateTopUI(){
+      audioBtn.textContent = "BGM: ON";
+      const lvl = currentLevel + 1;
+      levelPill.textContent = currentLevel < 0 ? "LEVEL —" : `LEVEL ${lvl}/11`;
+      unlockedPill.textContent = `UNLOCKED ${unlocked.length}/11`;
+      const pct = currentLevel < 0 ? 0 : Math.round((currentLevel/11)*100);
+      progressFill.style.width = pct + "%";
+    }
+
+    async function startGame(){
+      safePlay(sClick);
+      await runBoot();
+
+      startScreen.style.display="none";
+      gamePanel.style.display="block";
+      currentLevel = 0;
+      unlocked = [];
+      await loadLevel(true);
+
+      if(audioEnabled) bgm.play().catch(()=>{});
+    }
+
+    async function loadLevel(withGlitch=false){
+      clearMsg();
+      retryBtn.style.display="none";
+      revealAnywayBtn.style.display="none";
+      wrongAttemptedThisLevel = false;
+
+      if(withGlitch) showGlitch();
+
+      const level = LEVELS[currentLevel];
+      panelTitle.textContent = level.title;
+      await typeText(panelSub, level.sub, 14);
+
+      challengeArea.innerHTML = "";
+      level.render(challengeArea);
+      bindChoiceWave();
+      updateTopUI();
+    }
+
+    function onFail(){
+      safePlay(sFail);
+      setMsg("❌ Incorrect! Try again.", false, true);
+      retryBtn.style.display="inline-flex";
+      wrongAttemptedThisLevel=true;
+      revealAnywayBtn.style.display="inline-flex";
+
+      if(selectedIndex !== null){
+        const btn = challengeArea.querySelector(`.choice[data-index="${selectedIndex}"]`);
+        if(btn) btn.classList.add("wrong");
+      }
+    }
+
+    function onSuccess(auto=false){
+      safePlay(sSuccess);
+      clearMsg();
+      setMsg(auto ? "⚠️ Revealing anyway..." : "✅ Correct! Access granted.", true, false);
+
+      const count = REVEAL_COUNTS[currentLevel]; // 1
+      const revealedNow = [];
+
+      for(let i=0;i<count;i++){
+        const m = randomUnrevealedMember();
+        if(!m) break;
+        unlocked.push(m.id);
+        revealedNow.push(m);
+      }
+
+      showUnlockSequence(revealedNow, async ()=>{
+        if(currentLevel < LEVELS.length - 1){
+          currentLevel++;
+          await loadLevel(true);
+        }else{
+          showFinalScreen();
+        }
+      });
+    }
+
+    function showUnlockSequence(list, done){
+      if(list.length===0){done(); return;}
+      let idx=0;
+
+      const showOne = ()=>{
+        const m = list[idx];
+        overlay.style.display="flex";
+        unlockSmall.textContent = `Unlocked ${idx+1} of ${list.length} in this mission`;
+
+        memName.textContent = m.name;
+        memId.textContent = m.id;
+        memTeam.textContent = m.team;
+
+        if(m.team.toLowerCase().includes("dev")){
+          catBadge.textContent="DEVELOPMENT";
+          catBadge.className="badge dev";
+        }else{
+          catBadge.textContent="MANAGEMENT";
+          catBadge.className="badge mgmt";
+        }
+
+        safePlay(sUnlock);
+        shootConfetti();
+        updateTopUI();
+      };
+
+      const next = ()=>{
+        safePlay(sClick);
+        idx++;
+        if(idx >= list.length){
+          overlay.style.display="none";
+          closeOverlayBtn.onclick=null;
+          done();
+        }else{
+          showOne();
+        }
+      };
+
+      closeOverlayBtn.onclick = next;
+      showOne();
+    }
+
+    function showFinalScreen(){
+      panelTitle.textContent="Protocol Complete ✅";
+      panelSub.textContent="All members unlocked successfully.";
+      progressFill.style.width="100%";
+      updateTopUI();
+      showGlitch();
+
+      const full = MEMBERS.map(m=>{
+        const cat = m.team.toLowerCase().includes("dev") ? "DEVELOPMENT" : "MANAGEMENT";
+        return `
+          <div style="padding:14px; border-radius:22px; border:1px solid rgba(0,245,255,.12);
+            background: rgba(0,0,0,.12);">
+            <div style="font-weight:1000">${m.name}</div>
+            <div class="hint" style="margin-top:6px;">${m.id} • ${cat}</div>
+          </div>
+        `;
+      }).join("");
+
+      challengeArea.innerHTML = `
+        <div class="hint type">Batch-2 Final Announcement 🎉</div>
+        <div style="margin-top:12px; width:min(820px,100%); display:grid; gap:10px;">
+          ${full}
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn-primary" id="restartBtn">Restart Game</button>
+        </div>
+      `;
+
+      submitBtn.style.display="none";
+      retryBtn.style.display="none";
+      revealAnywayBtn.style.display="none";
+
+      document.getElementById("restartBtn").addEventListener("click", ()=>{
+        safePlay(sClick);
+        submitBtn.style.display="inline-flex";
+        startScreen.style.display="block";
+        gamePanel.style.display="none";
+        currentLevel=-1;
+        updateTopUI();
+      });
+
+      shootConfetti();
+    }
+
+    submitBtn.addEventListener("click", ()=>{
+      safePlay(sClick);
+
+      const level = LEVELS[currentLevel];
+      if(selectedIndex === null){
+        setMsg("⚠️ Select an option first.", false, true);
+        return;
+      }
+      if(selectedIndex === level.correctIndex){
+        const btn = challengeArea.querySelector(`.choice[data-index="${selectedIndex}"]`);
+        if(btn) btn.classList.add("correct");
+        onSuccess(false);
+      }else{
+        onFail();
+      }
+    });
+
+    retryBtn.addEventListener("click", ()=>{
+      safePlay(sClick);
+      clearMsg();
+      retryBtn.style.display="none";
+      revealAnywayBtn.style.display="inline-flex";
+      challengeArea.querySelectorAll(".choice").forEach(b=>{
+        b.classList.remove("wrong","correct");
+      });
+    });
+
+    revealAnywayBtn.addEventListener("click", ()=>{ safePlay(sClick); onSuccess(true); });
+    startBtn.addEventListener("click", startGame);
+
+    updateTopUI();
+  </script>
+</body>
+</html>
+
